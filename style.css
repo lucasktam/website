@@ -1,0 +1,75 @@
+#square {
+    height: 200px;
+    width: 200px;
+    background-color: white;
+    margin: 0 auto; 
+}
+
+h1 {
+    text-align: center;
+    color:rgb(228, 228, 228);
+}
+p, label, input, button {
+    color:rgb(228, 228, 228);
+}
+input {
+    color: rgb(35, 35, 38);
+    background-color: rgb(163, 157, 157);
+    width: 50px;
+    border: none;
+}
+
+.inputs {
+    display: flex;
+
+    align-items: center;    
+    justify-content: center;
+    gap: 10px;              
+    
+
+}   
+
+#submitButton{
+    height: 30px;
+    width: 100px;
+    background-color: goldenrod;
+    color: rgb(35, 35, 38);
+    margin: 0 auto; 
+    display: block;  
+    border: none;
+    border-radius: 5px;
+
+}
+
+* {
+    background-color: rgb(35, 35, 38);
+    font-family: 'Poppins', sans-serif;
+}
+
+#trueRGB{
+    text-align: center;
+}
+
+#continueButton{
+    width:150px;
+    height:30px;
+    color: rgb(35, 35, 38);
+    background-color: rgb(163, 157, 157);
+    margin: 0 auto; 
+    display: block; 
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+}
+
+#bw-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
