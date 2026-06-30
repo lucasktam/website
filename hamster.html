@@ -7,7 +7,7 @@
 <style>
   html, body { margin: 0; height: 100%; background: #ffffff; overflow: hidden; }
   #wrap { position: fixed; top: 0; left: 0; }
-  canvas { display: block; transform: scale(1.2); transform-origin: top left; }
+  canvas { display: block; }
   #status { position: fixed; top: 12px; left: 12px; color: #9f9; font: 14px monospace; }
   #panel {
     position: fixed; top: 0; left: 0;
@@ -402,7 +402,19 @@ async function init() {
   await video.play();
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
-  document.getElementById("panel").style.left = (canvas.width * 1.2 + 8) + "px";
+  const panelEl = document.getElementById("panel");
+  function resize() {
+    const panelW = 300;
+    const scale = Math.min(
+      (window.innerWidth - panelW - 8) / canvas.width,
+      window.innerHeight / canvas.height
+    );
+    canvas.style.width = (canvas.width * scale) + "px";
+    canvas.style.height = (canvas.height * scale) + "px";
+    panelEl.style.left = (canvas.width * scale + 8) + "px";
+  }
+  resize();
+  window.addEventListener("resize", resize);
   statusEl.textContent = "";
   requestAnimationFrame(loop);
 }
