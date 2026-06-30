@@ -407,7 +407,7 @@ async function init() {
     const panelW = 300;
     const scale = Math.min(
       (window.innerWidth - panelW - 8) / canvas.width,
-      window.innerHeight / canvas.height
+      (window.innerHeight * 0.75) / canvas.height
     );
     canvas.style.width = (canvas.width * scale) + "px";
     canvas.style.height = (canvas.height * scale) + "px";
