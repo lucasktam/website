@@ -35,6 +35,19 @@
     object-fit: cover;
     border-radius: 4px;
   }
+  @media (max-width: 768px) {
+    #panel {
+      top: auto !important;
+      bottom: 0;
+      left: 0 !important;
+      width: 100% !important;
+      height: auto;
+      border-top: 1px solid #333;
+    }
+    #grid {
+      grid-template-columns: repeat(auto-fill, minmax(55px, 1fr));
+    }
+  }
 </style>
 </head>
 <body>
@@ -404,14 +417,24 @@ async function init() {
   canvas.height = video.videoHeight;
   const panelEl = document.getElementById("panel");
   function resize() {
-    const panelW = 300;
-    const scale = Math.min(
-      (window.innerWidth - panelW - 8) / canvas.width,
-      (window.innerHeight * 0.75) / canvas.height
-    );
-    canvas.style.width = (canvas.width * scale) + "px";
-    canvas.style.height = (canvas.height * scale) + "px";
-    panelEl.style.left = (canvas.width * scale + 8) + "px";
+    const mobile = window.innerWidth <= 768;
+    if (mobile) {
+      const scale = Math.min(
+        window.innerWidth / canvas.width,
+        (window.innerHeight * 0.75) / canvas.height
+      );
+      canvas.style.width = (canvas.width * scale) + "px";
+      canvas.style.height = (canvas.height * scale) + "px";
+    } else {
+      const panelW = 300;
+      const scale = Math.min(
+        (window.innerWidth - panelW - 8) / canvas.width,
+        (window.innerHeight * 0.75) / canvas.height
+      );
+      canvas.style.width = (canvas.width * scale) + "px";
+      canvas.style.height = (canvas.height * scale) + "px";
+      panelEl.style.left = (canvas.width * scale + 8) + "px";
+    }
   }
   resize();
   window.addEventListener("resize", resize);
