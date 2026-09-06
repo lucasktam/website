@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paintings</title>
+  <style>
+    body {
+      font-family: Helvetica, Arial, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      font-size: 18px;
+    }
+    .grid {
+      column-count: 2;
+      column-gap: 60px;
+      column-rule: 1px solid #ccc;
+    }
+    .painting {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      break-inside: avoid;
+      margin-bottom: 50px;
+      padding-bottom: 50px;
+      border-bottom: 1px solid #ccc;
+    }
+    .painting:last-child {
+      border-bottom: none;
+    }
+    .painting .frame {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .painting img {
+      width: 100%;
+      height: auto;
+      cursor: pointer;
+    }
+    .painting p {
+      margin: 10px 0 0 0;
+      text-align: center;
+    }
+    #modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    #modal.open {
+      display: flex;
+    }
+    #modal img {
+      max-width: 90%;
+      max-height: 90%;
+    }
+  </style>
+</head>
+<body>
+  <h1>Paintings</h1>
+  <nav>
+    <p>Back to <a href="/index.html">Home</a></p>
+  </nav>
+  <div class="grid">
+    <div class="painting">
+      <div class="frame"><img src="images/IMG_8885.png" alt="Painting"></div>
+      <p>Kunsthistorisches Museum Wien. Dec '25.</p>
+    </div>
+    
+    <div class="painting">
+      <div class="frame"><img src="images/44FAFE76-7BFA-4C16-8FE6-EF7A5F4A94AB.png" alt="Painting"></div>
+      <p>Obama and Bourdain's interview. May '25.</p>
+    </div>
+     <div class="painting">
+      <div class="frame"><img src="images/IMG_1523.png" alt="Painting"></div>
+      <p>Al-Khazneh! Aug '26. A gift for one of my mentors.</p>
+    </div>
+    <div class="painting">
+      <div class="frame"><img src="images/IMG_1648.png" alt="Painting"></div>
+      <p>Little 20min water study. Aug '26.</p>
+    </div>
+    <div class="painting">
+      <div class="frame"><img src="images/IMG_5327.png" alt="Painting"></div>
+      <p>Parasite. Apr '25.</p>
+    </div>
+  </div>
+
+  <div id="modal">
+    <img id="modal-img" src="" alt="Painting enlarged">
+  </div>
+
+  <script>
+    const modal = document.getElementById('modal');
+    const modalImg = document.getElementById('modal-img');
+    document.querySelectorAll('.frame img').forEach(img => {
+      img.addEventListener('click', () => {
+        modalImg.src = img.src;
+        modal.classList.add('open');
+      });
+    });
+    modal.addEventListener('click', () => {
+      modal.classList.remove('open');
+    });
+  </script>
+</body>
+</html>
