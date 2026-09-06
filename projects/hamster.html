@@ -409,6 +409,11 @@ async function init() {
   });
 
   statusEl.textContent = "requesting camera…";
+  if (!navigator.mediaDevices?.getUserMedia) {
+    statusEl.style.color = "#f88";
+    statusEl.textContent = "error: camera requires HTTPS or localhost";
+    return;
+  }
   const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
   video = document.createElement("video");
   video.srcObject = stream; video.playsInline = true;
