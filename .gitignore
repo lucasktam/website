@@ -7,3 +7,6 @@
 *.swp
 
 .env
+
+.venv/
+.ipynb_checkpoints/
