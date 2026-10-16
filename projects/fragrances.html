@@ -146,6 +146,18 @@
     font-size: 14px;
   }
   .chip strong { display: block; font-size: 18px; }
+  .back { display: inline-block; margin-bottom: 8px; color: var(--muted); font-size: 14px; text-decoration: none; }
+  .back:hover { color: var(--text); text-decoration: underline; }
+  button.info-toggle {
+    margin-top: 12px;
+    padding: 4px 10px;
+    font-size: 13px;
+    font-weight: normal;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+  }
+  button.info-toggle:hover { background: var(--hover); }
   #interpretation { line-height: 1.6; color: var(--text); }
   #interpretation .note { color: var(--muted); font-size: 14px; }
   .error { color: #c0392b; }
@@ -159,11 +171,19 @@
     line-height: 1.6;
   }
   footer a { color: inherit; }
+  footer h2 { margin: 20px 0 4px; font-size: 14px; color: var(--text); }
+  footer p { margin: 8px 0; }
+  footer .katex-display { margin: 10px 0; color: var(--text); overflow-x: auto; overflow-y: hidden; }
 </style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.querySelector('footer'))"></script>
 </head>
 <body>
 <div class="layout">
 <main>
+  <a class="back" href="/projects.html">← Projects</a>
   <h1>Fragrance Vectors</h1>
   <p class="sub">Examine the lean of a note or accord by gender, old vs new world, and global north vs south.</p>
 
@@ -177,7 +197,7 @@
   <br>
   <form id="form" autocomplete="off">
     <div class="search">
-      <input id="query" type="text" placeholder="Try vanilla, oud, bergamot…" aria-label="Ingredient or accord"
+      <input id="query" type="text" placeholder="Try vanilla, sage, bergamot…" aria-label="Ingredient or accord"
              role="combobox" aria-autocomplete="list" aria-controls="suggestions" aria-expanded="false">
       <ul id="suggestions" role="listbox"></ul>
     </div>
@@ -185,18 +205,57 @@
   </form>
 
   <div id="readout"></div>
-  <p id="interpretation"></p>
+  <p id="message"></p>
+  <button type="button" class="info-toggle" id="info-toggle" aria-expanded="false" aria-controls="interpretation" hidden>ⓘ Show explanation</button>
+  <p id="interpretation" hidden></p>
 </main>
 
 <aside id="rankings" aria-label="Rankings"></aside>
 </div>
 
 <footer>
-  Data: the <a href="https://www.kaggle.com/datasets/olgagmiufana1/fragrantica-com-fragrance-dataset">Fragrantica.com Fragrance Dataset</a>
-  on Kaggle, scraped from <a href="https://www.fragrantica.com">Fragrantica</a> by Olga G (Miufana1). It covers about 24,000 fragrances with their
+  <p>Data: the <a href="https://www.kaggle.com/datasets/olgagmiufana1/fragrantica-com-fragrance-dataset">Fragrantica.com Fragrance Dataset</a>
+  on Kaggle, scraped from <a href="https://www.fragrantica.com">Fragrantica</a> by Olga G (Miufana1). It contains 24,063 fragrances with their
   brand, brand country, target gender, top/heart/base notes and main accords. Old/new world and global north/south are
   based on the brand's country. Only notes and accords found in at least
-  10 fragrances are included.
+  10 fragrances are included.</p>
+
+  <h2>How the numbers are calculated</h2>
+  <p>
+    Each axis compares two groups of fragrances, \(A\) and \(B\): women vs men for gender (unisex fragrances
+    left out), new vs old world, global south vs north, and, for the separate unisex measure, unisex vs men and
+    women combined. For an ingredient or accord \(i\), let \(n_A, n_B\) be the number of fragrances in each group
+    and \(k_A, k_B\) the number of those that contain \(i\) (anywhere in the top, heart or base notes, or as an
+    accord). Let \(p\) be the share of all fragrances that contain \(i\).
+  </p>
+  <p>
+    Raw odds ratios swing wildly for rare items, so each group gets a prior worth \(\alpha = 5\) imaginary
+    fragrances containing \(i\), padded with enough imaginary fragrances without \(i\) to keep the overall rate \(p\):
+  </p>
+  \[
+    \alpha_{\text{yes}} = \alpha, \qquad \alpha_{\text{no}} = \alpha \, \frac{1 - p}{p}
+  \]
+  <p>The smoothed log-odds ratio is then</p>
+  \[
+    \delta_i = \ln \frac{k_A + \alpha_{\text{yes}}}{\,n_A - k_A + \alpha_{\text{no}}\,}
+             \;-\; \ln \frac{k_B + \alpha_{\text{yes}}}{\,n_B - k_B + \alpha_{\text{no}}\,}
+  \]
+  <p>
+    and the number shown on the page is the odds ratio \(\mathrm{OR}_i = e^{\delta_i}\): \(1\times\) means no
+    difference, and \(\mathrm{OR}_i > 1\) leans toward group \(A\). Common items barely move under the prior; an item
+    seen in only a handful of fragrances is pulled strongly toward \(\delta_i = 0\).
+  </p>
+  <p>
+    The arrow plots the three log-odds directly, so equal leans in opposite directions sit at equal distances
+    from the origin:
+  </p>
+  \[
+    \vec{v}_i = \big(\delta_i^{\text{gender}},\; \delta_i^{\text{world}},\; \delta_i^{\text{south}}\big)
+  \]
+  <p>
+    Leans with \(e^{|\delta_i|} < 1.1\) are described as no meaningful lean. These are associations, not causes: a few
+    prolific brands can drive a result, and the axes overlap (Brazil is both new world and global south).
+  </p>
 </footer>
 
 <script>
@@ -251,7 +310,7 @@ fetch(CSV_URL)
     renderRankings();
   })
   .catch(() => {
-    document.getElementById("interpretation").innerHTML =
+    document.getElementById("message").innerHTML =
       '<span class="error">Couldn\'t load ingredient data.</span>';
   });
 
@@ -322,7 +381,9 @@ document.getElementById("form").addEventListener("submit", e => {
   else {
     current = null;
     document.getElementById("readout").replaceChildren();
-    document.getElementById("interpretation").innerHTML =
+    document.getElementById("interpretation").innerHTML = "";
+    infoToggle.hidden = true;
+    document.getElementById("message").innerHTML =
       '<span class="error">No match. The dataset only includes ingredients and accords that appear in at least 10 fragrances.</span>';
   }
 });
@@ -367,7 +428,18 @@ function showResult(r) {
     ? `Separately, it is about as common in unisex fragrances as in men's and women's ones. `
     : `Separately, compared with all men's and women's fragrances combined, it has <strong>${u.toFixed(2)}×</strong> the odds of appearing in a ${r.u > 0 ? "unisex" : "gendered"} fragrance (this unisex measure is not part of the 3D arrow). `;
   document.getElementById("interpretation").innerHTML = text;
+  document.getElementById("message").innerHTML = "";
+  infoToggle.hidden = false;
 }
+
+// The written explanation is optional; its shown/hidden state carries over between items
+const infoToggle = document.getElementById("info-toggle");
+infoToggle.addEventListener("click", () => {
+  const interpretation = document.getElementById("interpretation");
+  interpretation.hidden = !interpretation.hidden;
+  infoToggle.setAttribute("aria-expanded", String(!interpretation.hidden));
+  infoToggle.textContent = interpretation.hidden ? "ⓘ Show explanation" : "ⓘ Hide explanation";
+});
 
 // ---------- ranking tables ----------
 // Top 10 per list; `score` sorts descending. Values are log-odds, so negating flips to the other end
