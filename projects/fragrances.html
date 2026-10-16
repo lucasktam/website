@@ -20,6 +20,7 @@
     --unisex: #7a5bc4;
     --flag: #a86400;
     --grid: rgba(0, 0, 0, 0.07);
+    --faded: #d2d2d6;
   }
   * { box-sizing: border-box; }
   body {
@@ -32,17 +33,23 @@
   .layout {
     display: grid;
     grid-template-columns: minmax(0, 720px) 440px;
-    gap: 40px;
+    column-gap: 40px;
     justify-content: center;
     align-items: start;
   }
-  main { min-width: 0; }
+  /* Title above the viewer only, so the rankings start level with the viewer's top edge */
+  header { grid-column: 1; }
+  main { min-width: 0; grid-column: 1; grid-row: 2; }
+  aside { grid-column: 2; grid-row: 2; }
   @media (max-width: 1240px) {
     .layout { grid-template-columns: minmax(0, 720px); }
+    main, aside { grid-column: auto; grid-row: auto; }
+    aside { margin-top: 40px; }
   }
+  .rankings-title { margin: 0; font-size: 18px; line-height: 1; }
 
   /* Ranking tables: opposite pairs side by side, one column on phones */
-  #rankings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-top: 8px; align-items: start; }
+  #rankings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-top: 12px; align-items: start; }
   @media (max-width: 520px) { #rankings { grid-template-columns: 1fr; } }
   .ranking summary { cursor: pointer; padding-bottom: 4px; border-bottom: 3px solid; }
   .ranking h2 { display: inline; font-size: 13px; margin: 0; }
@@ -74,7 +81,7 @@
     border: none;
     cursor: pointer;
   }
-  #suggestions {
+  .suggestions {
     position: absolute;
     top: 100%;
     left: 0;
@@ -89,20 +96,19 @@
     overflow-y: auto;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
   }
-  #suggestions li {
+  .suggestions li {
     display: flex;
     justify-content: space-between;
     gap: 12px;
     padding: 8px 12px;
     cursor: pointer;
   }
-  #suggestions li.active, #suggestions li:hover { background: var(--hover); }
-  #suggestions .pos { color: var(--muted); font-size: 13px; white-space: nowrap; }
-  #suggestions:empty { display: none; }
+  .suggestions li.active, .suggestions li:hover { background: var(--hover); }
+  .suggestions .pos { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  .suggestions:empty { display: none; }
 
   #viewer {
     position: relative;
-    margin-top: 20px;
     background: var(--panel);
   }
   canvas { display: block; width: 100%; height: 540px; cursor: grab; touch-action: none; }
@@ -116,14 +122,24 @@
     border: 1px solid var(--border);
     font-size: 13px;
     line-height: 1.45;
-    pointer-events: none;
     z-index: 5;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
   }
   #tooltip .vec { font-size: 15px; font-weight: 600; }
   #tooltip .legend { color: var(--muted); font-size: 11px; margin-bottom: 8px; }
   #tooltip .heading { color: var(--muted); margin-bottom: 2px; }
-  #tooltip .name { font-weight: 600; }
+  #tooltip .title { font-size: 17px; font-weight: 700; margin-bottom: 2px; }
+  #tooltip .title::first-letter { text-transform: uppercase; }
+  #tooltip .name {
+    font: inherit;
+    font-weight: 600;
+    color: inherit;
+    background: none;
+    border: none;
+    padding: 0;
+    text-decoration: underline;
+    cursor: pointer;
+  }
   #tooltip dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 6px 0 0; }
   #tooltip dt { color: var(--muted); }
   #tooltip dd { margin: 0; }
@@ -158,8 +174,40 @@
     border: 1px solid var(--border);
   }
   button.info-toggle:hover { background: var(--hover); }
-  #interpretation { line-height: 1.6; color: var(--text); }
-  #interpretation .note { color: var(--muted); font-size: 14px; }
+
+  /* Perfume mode: legend of the perfume's items under the graph */
+  aside { min-width: 0; }
+  .mode-toggle { display: flex; margin-bottom: 8px; }
+  .mode-toggle button {
+    padding: 5px 12px;
+    font-size: 13px;
+    font-weight: normal;
+    color: var(--muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+  }
+  .mode-toggle button + button { border-left: none; }
+  .mode-toggle button[aria-checked="true"] { color: var(--text); background: var(--panel); font-weight: 600; }
+  #message:empty { display: none; }
+  #perfume-panel { margin-top: 14px; }
+  #perfume-panel .title { font-weight: 600; font-size: 17px; }
+  #perfume-panel .meta { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  #legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  #legend button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    font-size: 13px;
+    font-weight: normal;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+  }
+  #legend button:hover { background: var(--hover); }
+  #legend button.dim { color: var(--muted); }
+  #legend button[aria-pressed="true"] { border-color: var(--text); font-weight: 600; }
+  #legend .swatch { width: 10px; height: 10px; flex: none; }
   .error { color: #c0392b; }
   footer {
     max-width: 1200px;
@@ -182,35 +230,47 @@
 </head>
 <body>
 <div class="layout">
-<main>
+<header>
   <a class="back" href="/projects.html">← Projects</a>
   <h1>Fragrance Vectors</h1>
   <p class="sub">Examine the lean of a note or accord by gender, old vs new world, and global north vs south.</p>
+</header>
+<main>
 
   
 
   <div id="viewer">
     <canvas id="canvas"></canvas>
     <div id="tooltip" role="tooltip" hidden></div>
-    <span class="hint">drag to rotate · hover or tap the arrowhead for an example</span>
+    <span class="hint" id="hint">drag to rotate · hover or tap the arrowhead for an example</span>
   </div>
   <br>
+  <div class="mode-toggle" role="radiogroup" aria-label="Search for">
+    <button type="button" role="radio" aria-checked="true" data-mode="item">Search by Note or Accord</button>
+    <button type="button" role="radio" aria-checked="false" data-mode="perfume">Search by Fragrance</button>
+  </div>
   <form id="form" autocomplete="off">
     <div class="search">
       <input id="query" type="text" placeholder="Try vanilla, sage, bergamot…" aria-label="Ingredient or accord"
              role="combobox" aria-autocomplete="list" aria-controls="suggestions" aria-expanded="false">
-      <ul id="suggestions" role="listbox"></ul>
+      <ul id="suggestions" class="suggestions" role="listbox"></ul>
     </div>
     <button type="submit">Plot</button>
   </form>
+  <p id="message"></p>
+  <div id="perfume-panel" hidden>
+    <div class="title" id="perfume-title"></div>
+    <div class="meta" id="perfume-meta"></div>
+    <div id="legend" role="group" aria-label="Notes and accords in this perfume"></div>
+  </div>
 
   <div id="readout"></div>
-  <p id="message"></p>
-  <button type="button" class="info-toggle" id="info-toggle" aria-expanded="false" aria-controls="interpretation" hidden>ⓘ Show explanation</button>
-  <p id="interpretation" hidden></p>
 </main>
 
-<aside id="rankings" aria-label="Rankings"></aside>
+<aside>
+  <h2 class="rankings-title">Note/Accord Rankings</h2>
+  <div id="rankings" aria-label="Rankings"></div>
+</aside>
 </div>
 
 <footer>
@@ -220,13 +280,15 @@
   based on the brand's country. Only notes and accords found in at least
   10 fragrances are included.</p>
 
-  <h2>How the numbers are calculated</h2>
+  <!-- <h2>How the numbers are calculated</h2>
   <p>
     Each axis compares two groups of fragrances, \(A\) and \(B\): women vs men for gender (unisex fragrances
     left out), new vs old world, global south vs north, and, for the separate unisex measure, unisex vs men and
     women combined. For an ingredient or accord \(i\), let \(n_A, n_B\) be the number of fragrances in each group
     and \(k_A, k_B\) the number of those that contain \(i\) (anywhere in the top, heart or base notes, or as an
-    accord). Let \(p\) be the share of all fragrances that contain \(i\).
+    accord). Let \(p = K / N\) be the share of all fragrances that contain \(i\), where \(N\) is every fragrance in the
+    dataset and \(K\) the number containing \(i\). This includes ones outside both groups, such as unisex fragrances
+    on the gender axis.
   </p>
   <p>
     Raw odds ratios swing wildly for rare items, so each group gets a prior worth \(\alpha = 5\) imaginary
@@ -235,7 +297,12 @@
   \[
     \alpha_{\text{yes}} = \alpha, \qquad \alpha_{\text{no}} = \alpha \, \frac{1 - p}{p}
   \]
-  <p>The smoothed log-odds ratio is then</p>
+  <p>
+    Here \(\alpha_{\text{yes}}\) is the number of imaginary fragrances <em>with</em> \(i\) added to each group, and
+    \(\alpha_{\text{no}}\) the number <em>without</em> it. Their ratio \(\alpha_{\text{yes}} / \alpha_{\text{no}} =
+    p / (1 - p)\) is the overall odds of a fragrance containing \(i\), so the prior on its own shows no lean either way.
+    The smoothed log-odds ratio is then
+  </p>
   \[
     \delta_i = \ln \frac{k_A + \alpha_{\text{yes}}}{\,n_A - k_A + \alpha_{\text{no}}\,}
              \;-\; \ln \frac{k_B + \alpha_{\text{yes}}}{\,n_B - k_B + \alpha_{\text{no}}\,}
@@ -256,12 +323,17 @@
     Leans with \(e^{|\delta_i|} < 1.1\) are described as no meaningful lean. These are associations, not causes: a few
     prolific brands can drive a result, and the axes overlap (Brazil is both new world and global south).
   </p>
-</footer>
+</footer> -->
 
 <script>
 const CSV_URL = "../fragrances/ingredient_vectors.csv";
 // Per item: the most-rated fragrance containing it in the same octant as its vector, or null if there is none
 const EXAMPLES_URL = "../fragrances/ingredient_examples.json";
+// Every perfume with the items it contains; ~2.6 MB, so only fetched once someone uses the perfume search
+const PERFUMES_URL = "../fragrances/perfumes.json";
+// The notebook's spelling variants/synonyms, to find the item in an example's raw note lists
+const ALIASES_URL = "../fragrances/note_aliases.csv";
+const ACCORD_TO_NOTE = { oud: "agarwood (oud)", anis: "anise" }; // as in the notebook
 // Plotted on a log scale. ±1.6 (≈5× either way) fits ~84% of items; larger arrows run past the axis ends
 const range = 1.6;
 const ODDS_COLS = ["a", "b", "c", "u"]; // stored in the CSV as odds ratios
@@ -278,16 +350,29 @@ const AXES = [
 const UNISEX = { key: "u", color: "--unisex", pos: "unisex", neg: "gendered" };
 
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const titleCase = s => s.replace(/\b\w/g, c => c.toUpperCase());
 const fold = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 let rows = [];
-let current = null;
+let rowsByName = new Map();
+let current = null;  // the single plotted item (ingredient search / ranking tables)
+let perfume = null;  // perfume mode: { name, house, …, items: [{ row, color }] }
+let focused = null;  // in perfume mode, the item singled out (others greyed), or null
 let examples = {}; // stays {} until loaded; null if loading failed
 
 fetch(EXAMPLES_URL)
   .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
   .then(data => { examples = data; tooltipFor = null; })
   .catch(() => { examples = null; tooltipFor = null; });
+
+let noteAliases = new Map(); // variant -> canonical name
+fetch(ALIASES_URL)
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+  .then(text => {
+    noteAliases = new Map(text.trim().split("\n").slice(1).map(line => line.split(",").slice(0, 2)));
+    tooltipFor = null;
+  })
+  .catch(() => {}); // without aliases, only exact matches are bolded
 
 // ---------- data ----------
 fetch(CSV_URL)
@@ -307,6 +392,7 @@ fetch(CSV_URL)
       row.folded = fold(row.item);
       return row;
     });
+    rowsByName = new Map(rows.map(r => [r.item, r]));
     renderRankings();
   })
   .catch(() => {
@@ -314,53 +400,89 @@ fetch(CSV_URL)
       '<span class="error">Couldn\'t load ingredient data.</span>';
   });
 
-// ---------- autosuggest ----------
+// ---------- search box (note/accord or perfume) ----------
 const input = document.getElementById("query");
 const list = document.getElementById("suggestions");
+const message = document.getElementById("message");
 let matches = [];
 let active = -1;
+let searchMode = "item"; // "item" (note or accord) or "perfume"
+
+const PLACEHOLDERS = { item: "Try vanilla, sage, bergamot…", perfume: "Try Angel, Alien, Light Blue…" };
+
+// Switching modes clears the box but leaves whatever is plotted
+function setMode(mode) {
+  if (mode === searchMode) return;
+  searchMode = mode;
+  for (const button of document.querySelectorAll(".mode-toggle button")) {
+    button.setAttribute("aria-checked", String(button.dataset.mode === mode));
+  }
+  input.placeholder = PLACEHOLDERS[mode];
+  input.setAttribute("aria-label", mode === "item" ? "Ingredient or accord" : "Perfume");
+  input.value = "";
+  matches = [];
+  active = -1;
+  renderSuggestions();
+  message.innerHTML = "";
+  if (mode === "perfume") loadPerfumes();
+}
+
+for (const button of document.querySelectorAll(".mode-toggle button")) {
+  button.addEventListener("click", () => { setMode(button.dataset.mode); input.focus(); });
+}
+
+function itemMatches(q) {
+  return rows
+    .filter(r => r.folded.includes(q))
+    .sort((x, y) => (y.folded.startsWith(q) - x.folded.startsWith(q)) || y.count - x.count)
+    .slice(0, 12);
+}
 
 function suggest() {
   const q = fold(input.value.trim());
-  matches = q
-    ? rows
-        .filter(r => r.folded.includes(q))
-        .sort((x, y) => (y.folded.startsWith(q) - x.folded.startsWith(q)) || y.count - x.count)
-        .slice(0, 12)
-    : [];
+  matches = !q ? [] : searchMode === "item" ? itemMatches(q) : perfumeMatches(q);
   active = -1;
   renderSuggestions();
 }
 
 function renderSuggestions() {
-  list.replaceChildren(...matches.map((r, i) => {
-    const li = document.createElement("li");
+  list.replaceChildren(...matches.map((m, i) => {
+    const li = el("li");
     li.setAttribute("role", "option");
     li.className = i === active ? "active" : "";
-    const name = document.createElement("span");
-    name.textContent = r.item;
-    const pos = document.createElement("span");
-    pos.className = "pos";
-    pos.textContent = `${r.type} · ${r.count}`;
-    li.append(name, pos);
-    li.addEventListener("mousedown", e => { e.preventDefault(); choose(r); });
+    const [name, detail] = searchMode === "item"
+      ? [m.item, `${m.type} · ${m.count}`]
+      : [m.name, `${m.house}${m.year ? ` · ${m.year}` : ""}`];
+    li.append(el("span", "", name), el("span", "pos", detail));
+    li.addEventListener("mousedown", e => { e.preventDefault(); pick(m); });
     return li;
   }));
   input.setAttribute("aria-expanded", matches.length > 0);
   if (active >= 0) list.children[active].scrollIntoView({ block: "nearest" });
 }
 
+function pick(m) {
+  if (searchMode === "item") choose(m);
+  else choosePerfume(m);
+}
+
+// Plot a single note or accord (also used by the ranking tables, so it switches the box to that mode)
 function choose(r) {
+  setMode("item");
   input.value = r.item;
   matches = [];
   active = -1;
   renderSuggestions();
+  clearPerfume();
   current = r;
   showResult(r);
 }
 
 input.addEventListener("input", suggest);
-input.addEventListener("focus", suggest);
+input.addEventListener("focus", () => {
+  if (searchMode === "perfume") loadPerfumes().then(suggest);
+  else suggest();
+});
 input.addEventListener("blur", () => { matches = []; renderSuggestions(); });
 input.addEventListener("keydown", e => {
   if (!matches.length) return;
@@ -369,34 +491,34 @@ input.addEventListener("keydown", e => {
   else if (e.key === "Escape") { matches = []; renderSuggestions(); }
 });
 
-document.getElementById("form").addEventListener("submit", e => {
+document.getElementById("form").addEventListener("submit", async e => {
   e.preventDefault();
-  if (active >= 0) return choose(matches[active]);
+  if (active >= 0) return pick(matches[active]);
   const q = fold(input.value.trim());
   if (!q) return;
+
+  if (searchMode === "perfume") {
+    await loadPerfumes();
+    if (!perfumes) return;
+    // Exact name first (most-rated if several houses share it), then the top suggestion
+    const found = perfumes.find(p => p.foldedName === normalize(q)) || perfumeMatches(q)[0];
+    if (found) choosePerfume(found);
+    else message.innerHTML = '<span class="error">No perfume found.</span>';
+    return;
+  }
+
   // Exact name first, then the top suggestion
-  const exact = rows.filter(r => r.folded === q).sort((x, y) => y.count - x.count)[0];
-  const pick = exact || matches[0];
-  if (pick) choose(pick);
+  const found = rows.filter(r => r.folded === q).sort((x, y) => y.count - x.count)[0] || itemMatches(q)[0];
+  if (found) choose(found);
   else {
     current = null;
     document.getElementById("readout").replaceChildren();
-    document.getElementById("interpretation").innerHTML = "";
+
     infoToggle.hidden = true;
-    document.getElementById("message").innerHTML =
+    message.innerHTML =
       '<span class="error">No match. The dataset only includes ingredients and accords that appear in at least 10 fragrances.</span>';
   }
 });
-
-// ---------- interpretation ----------
-function describe(value, axis) {
-  const or = Math.exp(Math.abs(value));
-  if (or < 1.1) return null;
-  const side = value > 0 ? axis.pos : axis.neg;
-  const other = value > 0 ? axis.neg : axis.pos;
-  const isGender = axis.key === "a";
-  return `<strong>${or.toFixed(2)}×</strong> the odds of being ${isGender ? `marketed for ${side}` : `from ${/^[aeiou]/.test(side) ? "an" : "a"} ${side} brand`} rather than ${other}`;
-}
 
 function showResult(r) {
   const what = {
@@ -419,27 +541,9 @@ function showResult(r) {
   const parts = AXES.map(axis => describe(r[axis.key], axis)).filter(Boolean);
   const neutral = AXES.filter(axis => !describe(r[axis.key], axis)).map(axis => `${axis.neg} vs ${axis.pos}`);
 
-  let text = parts.length
-    ? `A fragrance with ${r.item} has ${parts.join("; ")}. `
-    : `None of the three axes shows a meaningful lean (all odds ratios are within 10% of even). `;
-  if (parts.length && neutral.length) text += `It shows essentially no lean on ${neutral.join(" or ")}. `;
-  const u = Math.exp(Math.abs(r.u));
-  text += u < 1.1
-    ? `Separately, it is about as common in unisex fragrances as in men's and women's ones. `
-    : `Separately, compared with all men's and women's fragrances combined, it has <strong>${u.toFixed(2)}×</strong> the odds of appearing in a ${r.u > 0 ? "unisex" : "gendered"} fragrance (this unisex measure is not part of the 3D arrow). `;
-  document.getElementById("interpretation").innerHTML = text;
   document.getElementById("message").innerHTML = "";
   infoToggle.hidden = false;
 }
-
-// The written explanation is optional; its shown/hidden state carries over between items
-const infoToggle = document.getElementById("info-toggle");
-infoToggle.addEventListener("click", () => {
-  const interpretation = document.getElementById("interpretation");
-  interpretation.hidden = !interpretation.hidden;
-  infoToggle.setAttribute("aria-expanded", String(!interpretation.hidden));
-  infoToggle.textContent = interpretation.hidden ? "ⓘ Show explanation" : "ⓘ Hide explanation";
-});
 
 // ---------- ranking tables ----------
 // Top 10 per list; `score` sorts descending. Values are log-odds, so negating flips to the other end
@@ -478,6 +582,113 @@ function renderRankings() {
     section.append(summary, table);
     return section;
   }));
+}
+
+// ---------- perfume mode ----------
+let perfumes = null;      // [{ name, house, year, gender, country, ratings, items, omitted, … }], most-rated first
+let perfumeVocab = [];    // item names that perfume `items` index into
+let perfumesLoading = null;
+
+function loadPerfumes() {
+  if (!perfumesLoading) {
+    message.textContent = "Loading perfumes…";
+    perfumesLoading = fetch(PERFUMES_URL)
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(data => {
+        perfumeVocab = data.vocab;
+        perfumes = data.perfumes.map(values => {
+          const p = Object.fromEntries(data.fields.map((field, i) => [field, values[i]]));
+          p.foldedName = normalize(p.name);
+          p.folded = ` ${normalize(`${p.name} ${p.house}`)}`; // leading space so " word" finds word starts
+          return p;
+        });
+        message.textContent = "";
+      })
+      .catch(() => {
+        perfumesLoading = null; // allow a retry on the next focus
+        message.innerHTML = '<span class="error">Couldn\'t load perfumes.</span>';
+      });
+  }
+  return perfumesLoading;
+}
+
+// Lowercase, no accents, punctuation as spaces: "Dolce & Gabbana" -> "dolce gabbana"
+const normalize = s => fold(s).replace(/[^a-z0-9]+/g, " ").trim();
+
+// Names starting with the query first, then perfumes where every typed word starts a word in the
+// name or house, in any order ("dior sauvage" finds Sauvage by Dior). The list is already most-rated first
+function perfumeMatches(q) {
+  const out = [];
+  q = normalize(q);
+  if (!perfumes || !q) return out;
+  const words = q.split(" ").map(w => ` ${w}`);
+  for (const p of perfumes) if (p.foldedName.startsWith(q) && out.push(p) >= 12) return out;
+  for (const p of perfumes) {
+    if (out.length >= 12) break;
+    if (!p.foldedName.startsWith(q) && words.every(w => p.folded.includes(w))) out.push(p);
+  }
+  return out;
+}
+
+// Distinct colours for up to ~30 arrows: golden-angle hue steps, alternating lightness
+const itemColor = i => `hsl(${(i * 137.508) % 360}, 70%, ${i % 2 ? 36 : 48}%)`;
+
+function choosePerfume(p) {
+  input.value = p.name;
+  matches = [];
+  active = -1;
+  renderSuggestions();
+  message.innerHTML = "";
+
+  // Leave single-item mode
+  current = null;
+
+  // Most common items first so they get the most distinct colours
+  const items = p.items.map(i => rowsByName.get(perfumeVocab[i])).filter(Boolean).sort((x, y) => y.count - x.count);
+  perfume = { ...p, items: items.map((row, i) => ({ row, color: itemColor(i) })) };
+
+  document.getElementById("perfume-title").textContent = `${p.name} — ${p.house}`;
+  const gender = p.gender === "unisex" ? "unisex" : `${p.gender}'s`;
+  const omitted = p.omitted ? ` · ${p.omitted} rarer note${p.omitted === 1 ? "" : "s"} not shown` : "";
+  document.getElementById("perfume-meta").textContent =
+    `${p.year ?? "year unknown"} · ${p.country} · ${gender} · ${items.length} notes and accords plotted${omitted}`;
+  document.getElementById("legend").replaceChildren(...perfume.items.map(({ row, color }) => {
+    const button = el("button");
+    button.type = "button";
+    button.setAttribute("aria-pressed", "false");
+    const swatch = el("span", "swatch");
+    swatch.style.background = color;
+    button.append(swatch, row.item);
+    button.addEventListener("click", () => focusItem(focused === row ? null : row));
+    button.dataset.item = row.item;
+    return button;
+  }));
+  document.getElementById("perfume-panel").hidden = false;
+  document.getElementById("hint").textContent = "drag to rotate · click an arrow or a note below to single it out";
+  focusItem(null);
+}
+
+// Single out one of the perfume's items (null shows them all again)
+function focusItem(row) {
+  focused = row;
+  for (const button of document.querySelectorAll("#legend button")) {
+    const isFocused = row !== null && button.dataset.item === row.item;
+    button.setAttribute("aria-pressed", String(isFocused));
+    button.classList.toggle("dim", row !== null && !isFocused);
+  }
+  if (row) showResult(row);
+  else {
+    document.getElementById("readout").replaceChildren();
+    infoToggle.hidden = true;
+  }
+}
+
+function clearPerfume() {
+  if (!perfume) return;
+  perfume = null;
+  focused = null;
+  document.getElementById("perfume-panel").hidden = true;
+  document.getElementById("hint").textContent = "drag to rotate · hover or tap the arrowhead for an example";
 }
 
 // ---------- 3D viewer ----------
@@ -529,6 +740,29 @@ function label(p, text, color, font = "600 12px") {
   ctx.fillText(text, x, y);
 }
 
+// One arrow from the origin to the item's vector; returns the arrowhead's screen position
+function drawArrow(row, color, { width, dropLines, labelColor, labelFont }) {
+  const tip = AXES.reduce((acc, axis) => acc.map((c, i) => c + axis.vec[i] * row[axis.key]), [0, 0, 0]);
+  if (dropLines) {
+    // Drop line to the floor plane for depth
+    const muted = css("--muted");
+    line(tip, [tip[0], 0, tip[2]], muted, 1, [4, 4]);
+    line([0, 0, 0], [tip[0], 0, tip[2]], muted, 1, [4, 4]);
+  }
+  line([0, 0, 0], tip, color, width);
+  const [tx, ty] = project(tip), [bx, by] = project(scaled(tip, 0.85));
+  const ang = Math.atan2(ty - by, tx - bx);
+  const size = 8 + width * 1.4;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(tx, ty);
+  ctx.lineTo(tx - size * Math.cos(ang - 0.4), ty - size * Math.sin(ang - 0.4));
+  ctx.lineTo(tx - size * Math.cos(ang + 0.4), ty - size * Math.sin(ang + 0.4));
+  ctx.fill();
+  if (labelColor) label([tip[0], tip[1] + range * 0.1 * Math.sign(tip[1] || 1), tip[2]], row.item, labelColor, labelFont);
+  return [tx, ty];
+}
+
 function draw() {
   ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
   const muted = css("--muted");
@@ -546,29 +780,25 @@ function draw() {
       label(scaled(axis.vec, Math.log(t)), `${t}×`, muted, "10px");
       label(scaled(axis.vec, -Math.log(t)), `${t}×`, muted, "10px");
     }
-    label(scaled(axis.vec, range * 1.13), axis.pos, color);
-    label(scaled(axis.vec, -range * 1.13), axis.neg, color);
+    label(scaled(axis.vec, range * 1.13), titleCase(axis.pos), color, "700 14px");
+    label(scaled(axis.vec, -range * 1.13), titleCase(axis.neg), color, "700 14px");
   }
 
-  tipScreen = null;
-  if (current) {
-    const tip = AXES.reduce((acc, axis) => acc.map((c, i) => c + axis.vec[i] * current[axis.key]), [0, 0, 0]);
-    const accent = css("--accent");
-    // Drop line to the floor plane for depth
-    line(tip, [tip[0], 0, tip[2]], muted, 1, [4, 4]);
-    line([0, 0, 0], [tip[0], 0, tip[2]], muted, 1, [4, 4]);
-    line([0, 0, 0], tip, accent, 3);
-    // Arrowhead
-    const [tx, ty] = project(tip), [bx, by] = project(scaled(tip, 0.85));
-    tipScreen = [tx, ty];
-    const ang = Math.atan2(ty - by, tx - bx);
-    ctx.fillStyle = accent;
-    ctx.beginPath();
-    ctx.moveTo(tx, ty);
-    ctx.lineTo(tx - 12 * Math.cos(ang - 0.4), ty - 12 * Math.sin(ang - 0.4));
-    ctx.lineTo(tx - 12 * Math.cos(ang + 0.4), ty - 12 * Math.sin(ang + 0.4));
-    ctx.fill();
-    label([tip[0], tip[1] + range * 0.1 * Math.sign(tip[1] || 1), tip[2]], current.item, css("--text"));
+  // What to draw: the single plotted item, or every item of the chosen perfume
+  tips = [];
+  const arrows = perfume
+    ? perfume.items.map(({ row, color }) => ({ row, color, faded: focused !== null && row !== focused }))
+    : current ? [{ row: current, color: css("--accent"), faded: false }] : [];
+  arrows.sort((x, y) => (y.faded - x.faded) || ((x.row === focused) - (y.row === focused))); // faded first, focus on top
+  const crowded = perfume && !focused; // many full-colour arrows: thinner, smaller labels, no drop lines
+  for (const { row, color, faded } of arrows) {
+    const [tx, ty] = drawArrow(row, faded ? css("--faded") : color, {
+      width: faded ? 1.5 : crowded ? 2 : 3,
+      dropLines: !faded && !crowded,
+      labelColor: faded ? null : crowded ? color : css("--text"),
+      labelFont: crowded ? "11px" : "600 12px",
+    });
+    tips.push({ row, x: tx, y: ty });
   }
   updateTooltip();
   requestAnimationFrame(draw);
@@ -587,8 +817,15 @@ canvas.addEventListener("pointermove", e => {
   pitch = Math.max(-1.5, Math.min(1.5, drag.pitch + (e.clientY - drag.y) * 0.01));
 });
 canvas.addEventListener("pointerup", e => {
-  // A tap (no real drag) acts as hover, so touch users can open the tooltip by tapping the arrowhead
-  if (drag && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 5) pointer = [e.offsetX, e.offsetY];
+  // A tap (no real drag) acts as hover, so touch users can open the tooltip by tapping the arrowhead.
+  // In perfume mode it also singles out the tapped arrow, or shows them all again if it hit nothing
+  if (drag && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 5) {
+    pointer = [e.offsetX, e.offsetY];
+    if (perfume) {
+      const hit = tipAt(pointer);
+      focusItem(hit ? (hit.row === focused ? null : hit.row) : null);
+    }
+  }
   drag = null;
   canvas.classList.remove("dragging");
 });
@@ -600,10 +837,23 @@ canvas.addEventListener("pointerleave", e => { if (e.pointerType !== "touch") po
 const viewer = document.getElementById("viewer");
 const tooltip = document.getElementById("tooltip");
 let pointer = null;   // last pointer position over the canvas, in canvas pixels
-let tipScreen = null; // arrowhead position in canvas pixels, set each frame
+let tips = [];        // arrowheads drawn this frame: [{ row, x, y }] in canvas pixels
 let tooltipFor;       // the row the tooltip content was built for
+let overTooltip = false;
+tooltip.addEventListener("pointerenter", () => { overTooltip = true; });
+tooltip.addEventListener("pointerleave", () => { overTooltip = false; });
 
 const HIT_RADIUS = 18;
+
+// The arrowhead nearest the point, if any is within HIT_RADIUS
+function tipAt([px, py]) {
+  let best = null, bestDist = HIT_RADIUS;
+  for (const tip of tips) {
+    const d = Math.hypot(px - tip.x, py - tip.y);
+    if (d < bestDist) { best = tip; bestDist = d; }
+  }
+  return best;
+}
 
 function el(tag, className, text) {
   const node = document.createElement(tag);
@@ -624,7 +874,20 @@ const TINY_LEAN = Math.log(1.1); // leans under 1.1× either way may match the o
 const offSideName = (axis, r) =>
   ({ gender: r.u > 0 ? "unisex" : "men/women", world: "old/new world", south: "north/south" })[axis];
 
+// Plot the tooltip's example perfume, as if it had been searched for
+async function showExamplePerfume(ex) {
+  tooltip.hidden = true;
+  overTooltip = false;
+  setMode("perfume");
+  await loadPerfumes();
+  if (!perfumes) return;
+  const found = perfumes.find(p => p.name === ex.name && p.house === ex.house);
+  if (found) choosePerfume(found);
+  else message.innerHTML = '<span class="error">No perfume found.</span>';
+}
+
 function buildTooltip(r) {
+  const title = el("div", "title", r.item);
   const vec = el("div", "vec");
   vec.append("[");
   AXES.forEach((axis, i) => {
@@ -642,10 +905,23 @@ function buildTooltip(r) {
   
   } else if (ex) {
     const name = el("div");
-    name.append(el("span", "name", ex.name), ` (${ex.year ?? "year unknown"}) — ${ex.house}, ${ex.country}`);
+    const link = el("button", "name", ex.name);
+    link.type = "button";
+    link.title = "Plot this fragrance";
+    link.addEventListener("click", () => showExamplePerfume(ex));
+    name.append(link, ` (${ex.year ?? "year unknown"}) — ${ex.house}, ${ex.country}`);
     const dl = el("dl");
-    for (const [label, value] of [["Top", ex.top], ["Heart", ex.heart], ["Base", ex.base], ["Accords", ex.accords.join(", ")]]) {
-      dl.append(el("dt", "", label), el("dd", "", value));
+    const notes = s => s.split(",").map(x => x.trim()).filter(Boolean);
+    const noteName = x => { const c = x.replace(/[®™]/g, ""); return noteAliases.get(c) ?? c; };
+    const accordName = x => ACCORD_TO_NOTE[x] ?? x;
+    for (const [label, entries, canonical] of [
+      ["Top", notes(ex.top), noteName], ["Heart", notes(ex.heart), noteName],
+      ["Base", notes(ex.base), noteName], ["Accords", ex.accords, accordName],
+    ]) {
+      // The item itself in bold, wherever it appears
+      const dd = el("dd");
+      entries.forEach((x, i) => dd.append(i ? ", " : "", x === r.item || canonical(x) === r.item ? el("strong", "", x) : x));
+      dl.append(el("dt", "", label), dd);
     }
     body.push(name, dl);
     if (ex.off_side.length) {
@@ -658,23 +934,47 @@ function buildTooltip(r) {
       body.push(el("div", "legend", note));
     }
   }
-  tooltip.replaceChildren(vec, legend, ...body);
+  tooltip.replaceChildren(title, vec, legend, ...body);
+}
+
+// The deadzone: a wedge widening from the arrowhead's hit area (2 × HIT_RADIUS across) to part of the tooltip's near edge
+function inDeadzone([px, py], tip) {
+  const l = tooltip.offsetLeft, t = tooltip.offsetTop, r = l + tooltip.offsetWidth, b = t + tooltip.offsetHeight;
+  // Work along u (tip → tooltip) and across v; swap axes when the tooltip is above/below rather than beside the tip
+  const beside = tip.x < l || tip.x > r;
+  const [u, v, tu, tv] = beside ? [px, py, tip.x, tip.y] : [py, px, tip.y, tip.x];
+  const edge = beside ? (tip.x < l ? l : r) : (tip.y < t ? t : b);
+  const [lo, hi] = beside ? [t, b] : [l, r];
+  const f = (u - tu) / (edge - tu); // 0 at the tip, 1 at the tooltip
+  if (!(f >= 0 && f <= 1)) return false;
+  // Narrow end at the tip; sides spread at 45° to the tooltip, but never past its edge
+  const lo0 = tv - HIT_RADIUS, hi0 = tv + HIT_RADIUS, spread = Math.abs(edge - tu);
+  const lo1 = Math.max(lo, lo0 - spread), hi1 = Math.min(hi, hi0 + spread);
+  return v >= lo0 + f * (lo1 - lo0) && v <= hi0 + f * (hi1 - hi0);
+}
+
+// The open tooltip stays while the pointer is on it or in the deadzone, even over another arrowhead,
+// so the pointer can move from the arrowhead onto the tooltip
+function keptTip() {
+  if (drag || tooltip.hidden) return null;
+  const open = tips.find(t => t.row === tooltipFor);
+  return open && (overTooltip || (pointer && inDeadzone(pointer, open))) ? open : null;
 }
 
 function updateTooltip() {
-  const hit = current && tipScreen && pointer && !drag &&
-    Math.hypot(pointer[0] - tipScreen[0], pointer[1] - tipScreen[1]) < HIT_RADIUS;
-  canvas.classList.toggle("on-tip", Boolean(hit));
-  if (!hit) { tooltip.hidden = true; return; }
+  const onTip = pointer && !drag ? tipAt(pointer) : null;
+  canvas.classList.toggle("on-tip", Boolean(onTip));
+  const hit = keptTip() ?? onTip; // the deadzone wins over other arrowheads inside it
+  if (!hit) { tooltip.hidden = true; overTooltip = false; return; }
 
-  if (tooltipFor !== current) { buildTooltip(current); tooltipFor = current; }
+  if (tooltipFor !== hit.row) { buildTooltip(hit.row); tooltipFor = hit.row; }
   tooltip.hidden = false;
 
   // Beside the arrowhead on the side facing away from the origin. If there isn't room there, go
   // above/below instead (again away from the origin) so it never covers the arrow; that may overhang the viewer
   const w = tooltip.offsetWidth, h = tooltip.offsetHeight, W = viewer.clientWidth, H = viewer.clientHeight;
   const [ox, oy] = project([0, 0, 0]);
-  const [tx, ty] = tipScreen;
+  const { x: tx, y: ty } = hit;
   const sideLeft = tx >= ox ? tx + 16 : tx - 16 - w;
   let left, top;
   if (sideLeft >= 8 && sideLeft + w <= W - 8) {
@@ -683,6 +983,8 @@ function updateTooltip() {
   } else {
     left = Math.max(8, Math.min(tx - w / 2, W - w - 8));
     top = ty >= oy ? ty + 32 : ty - 32 - h; // extra gap clears the item label drawn beside the tip
+    // Flip below the tip if above would run off the top of the window (this may cover the arrow)
+    if (ty < oy && viewer.getBoundingClientRect().top + top < 8) top = ty + 32;
   }
   tooltip.style.left = `${left}px`;
   tooltip.style.top = `${top}px`;
