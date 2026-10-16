@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/png" href="../images/favicon.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fragrance Vectors</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --panel: #f3f3f4;
+    --hover: #e4e4e7;
+    --border: #d4d4d8;
+    --text: #1f1f22;
+    --muted: #6b6b72;
+    --accent: goldenrod;
+    --gender: #c2456e;
+    --world: #2a7fb0;
+    --south: #4c8a27;
+    --unisex: #7a5bc4;
+    --flag: #a86400;
+    --grid: rgba(0, 0, 0, 0.07);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 48px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+  }
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 720px) 440px;
+    gap: 40px;
+    justify-content: center;
+    align-items: start;
+  }
+  main { min-width: 0; }
+  @media (max-width: 1240px) {
+    .layout { grid-template-columns: minmax(0, 720px); }
+  }
+
+  /* Ranking tables: opposite pairs side by side, one column on phones */
+  #rankings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-top: 8px; align-items: start; }
+  @media (max-width: 520px) { #rankings { grid-template-columns: 1fr; } }
+  .ranking summary { cursor: pointer; padding-bottom: 4px; border-bottom: 3px solid; }
+  .ranking h2 { display: inline; font-size: 13px; margin: 0; }
+  .ranking table { margin-top: 4px; }
+  .ranking table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ranking td { padding: 3px 4px; border-bottom: 1px solid var(--border); }
+  .ranking td.num { text-align: right; white-space: nowrap; color: var(--muted); }
+  .ranking tbody tr { cursor: pointer; }
+  .ranking tbody tr:hover, .ranking tbody tr:focus { background: var(--hover); outline: none; }
+  h1 { text-align: center; margin: 0 0 4px; }
+  .sub { text-align: center; color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+
+  form { display: flex; gap: 8px; }
+  .search { position: relative; flex: 1; }
+  input {
+    width: 100%;
+    padding: 10px 12px;
+    font: inherit;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--border);
+  }
+  button {
+    padding: 0 18px;
+    font: inherit;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+  }
+  #suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    max-height: 280px;
+    overflow-y: auto;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  }
+  #suggestions li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    cursor: pointer;
+  }
+  #suggestions li.active, #suggestions li:hover { background: var(--hover); }
+  #suggestions .pos { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  #suggestions:empty { display: none; }
+
+  #viewer {
+    position: relative;
+    margin-top: 20px;
+    background: var(--panel);
+  }
+  canvas { display: block; width: 100%; height: 540px; cursor: grab; touch-action: none; }
+  canvas.dragging { cursor: grabbing; }
+  canvas.on-tip { cursor: pointer; }
+  #tooltip {
+    position: absolute;
+    width: min(340px, calc(100% - 16px));
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    line-height: 1.45;
+    pointer-events: none;
+    z-index: 5;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  }
+  #tooltip .vec { font-size: 15px; font-weight: 600; }
+  #tooltip .legend { color: var(--muted); font-size: 11px; margin-bottom: 8px; }
+  #tooltip .heading { color: var(--muted); margin-bottom: 2px; }
+  #tooltip .name { font-weight: 600; }
+  #tooltip dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 6px 0 0; }
+  #tooltip dt { color: var(--muted); }
+  #tooltip dd { margin: 0; }
+  #tooltip .flag { color: var(--flag); }
+  .hint {
+    position: absolute;
+    bottom: 8px;
+    right: 12px;
+    color: var(--muted);
+    font-size: 12px;
+    pointer-events: none;
+  }
+
+  #readout { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .chip {
+    flex: 1 1 140px;
+    padding: 8px 12px;
+    background: var(--panel);
+    border-left: 4px solid;
+    font-size: 14px;
+  }
+  .chip strong { display: block; font-size: 18px; }
+  #interpretation { line-height: 1.6; color: var(--text); }
+  #interpretation .note { color: var(--muted); font-size: 14px; }
+  .error { color: #c0392b; }
+  footer {
+    max-width: 1200px;
+    margin: 48px auto 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<div class="layout">
+<main>
+  <h1>Fragrance Vectors</h1>
+  <p class="sub">Examine the lean of a note or accord by gender, old vs new world, and global north vs south.</p>
+
+  
+
+  <div id="viewer">
+    <canvas id="canvas"></canvas>
+    <div id="tooltip" role="tooltip" hidden></div>
+    <span class="hint">drag to rotate · hover or tap the arrowhead for an example</span>
+  </div>
+  <br>
+  <form id="form" autocomplete="off">
+    <div class="search">
+      <input id="query" type="text" placeholder="Try vanilla, oud, bergamot…" aria-label="Ingredient or accord"
+             role="combobox" aria-autocomplete="list" aria-controls="suggestions" aria-expanded="false">
+      <ul id="suggestions" role="listbox"></ul>
+    </div>
+    <button type="submit">Plot</button>
+  </form>
+
+  <div id="readout"></div>
+  <p id="interpretation"></p>
+</main>
+
+<aside id="rankings" aria-label="Rankings"></aside>
+</div>
+
+<footer>
+  Data: the <a href="https://www.kaggle.com/datasets/olgagmiufana1/fragrantica-com-fragrance-dataset">Fragrantica.com Fragrance Dataset</a>
+  on Kaggle, scraped from <a href="https://www.fragrantica.com">Fragrantica</a> by Olga G (Miufana1). It covers about 24,000 fragrances with their
+  brand, brand country, target gender, top/heart/base notes and main accords. Old/new world and global north/south are
+  based on the brand's country. Only notes and accords found in at least
+  10 fragrances are included.
+</footer>
+
+<script>
+const CSV_URL = "../fragrances/ingredient_vectors.csv";
+// Per item: the most-rated fragrance containing it in the same octant as its vector, or null if there is none
+const EXAMPLES_URL = "../fragrances/ingredient_examples.json";
+// Plotted on a log scale. ±1.6 (≈5× either way) fits ~84% of items; larger arrows run past the axis ends
+const range = 1.6;
+const ODDS_COLS = ["a", "b", "c", "u"]; // stored in the CSV as odds ratios
+const TICKS = [1.5, 2, 3]; // odds-ratio tick marks, placed at log(t) on each side
+
+// Each axis: data column, plot direction, colour, and labels for the + and − ends
+const AXES = [
+  { key: "a", vec: [1, 0, 0], color: "--gender", pos: "women", neg: "men" },
+  { key: "b", vec: [0, 0, 1], color: "--world", pos: "new world", neg: "old world" },
+  { key: "c", vec: [0, -1, 0], color: "--south", pos: "global south", neg: "global north" },
+];
+
+// Not plotted: how much more often the item appears in unisex fragrances than in men's + women's
+const UNISEX = { key: "u", color: "--unisex", pos: "unisex", neg: "gendered" };
+
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const fold = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+let rows = [];
+let current = null;
+let examples = {}; // stays {} until loaded; null if loading failed
+
+fetch(EXAMPLES_URL)
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(data => { examples = data; tooltipFor = null; })
+  .catch(() => { examples = null; tooltipFor = null; });
+
+// ---------- data ----------
+fetch(CSV_URL)
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+  .then(text => {
+    const [header, ...lines] = text.trim().split("\n");
+    const cols = header.split(","); // ingredient, type ("ingredient" | "accord" | "ingredient + accord"), then numbers
+    rows = lines.map(line => {
+      const row = {};
+      line.split(",").forEach((value, i) => {
+        const col = cols[i];
+        if (col === "ingredient" || col === "type") row[col] = value;
+        // Odds ratios are converted to log-odds so men/women (etc.) are symmetric around 0
+        else row[col] = ODDS_COLS.includes(col) ? Math.log(Number(value)) : Number(value);
+      });
+      row.item = row.ingredient;
+      row.folded = fold(row.item);
+      return row;
+    });
+    renderRankings();
+  })
+  .catch(() => {
+    document.getElementById("interpretation").innerHTML =
+      '<span class="error">Couldn\'t load ingredient data.</span>';
+  });
+
+// ---------- autosuggest ----------
+const input = document.getElementById("query");
+const list = document.getElementById("suggestions");
+let matches = [];
+let active = -1;
+
+function suggest() {
+  const q = fold(input.value.trim());
+  matches = q
+    ? rows
+        .filter(r => r.folded.includes(q))
+        .sort((x, y) => (y.folded.startsWith(q) - x.folded.startsWith(q)) || y.count - x.count)
+        .slice(0, 12)
+    : [];
+  active = -1;
+  renderSuggestions();
+}
+
+function renderSuggestions() {
+  list.replaceChildren(...matches.map((r, i) => {
+    const li = document.createElement("li");
+    li.setAttribute("role", "option");
+    li.className = i === active ? "active" : "";
+    const name = document.createElement("span");
+    name.textContent = r.item;
+    const pos = document.createElement("span");
+    pos.className = "pos";
+    pos.textContent = `${r.type} · ${r.count}`;
+    li.append(name, pos);
+    li.addEventListener("mousedown", e => { e.preventDefault(); choose(r); });
+    return li;
+  }));
+  input.setAttribute("aria-expanded", matches.length > 0);
+  if (active >= 0) list.children[active].scrollIntoView({ block: "nearest" });
+}
+
+function choose(r) {
+  input.value = r.item;
+  matches = [];
+  active = -1;
+  renderSuggestions();
+  current = r;
+  showResult(r);
+}
+
+input.addEventListener("input", suggest);
+input.addEventListener("focus", suggest);
+input.addEventListener("blur", () => { matches = []; renderSuggestions(); });
+input.addEventListener("keydown", e => {
+  if (!matches.length) return;
+  if (e.key === "ArrowDown") { active = (active + 1) % matches.length; renderSuggestions(); e.preventDefault(); }
+  else if (e.key === "ArrowUp") { active = (active - 1 + matches.length) % matches.length; renderSuggestions(); e.preventDefault(); }
+  else if (e.key === "Escape") { matches = []; renderSuggestions(); }
+});
+
+document.getElementById("form").addEventListener("submit", e => {
+  e.preventDefault();
+  if (active >= 0) return choose(matches[active]);
+  const q = fold(input.value.trim());
+  if (!q) return;
+  // Exact name first, then the top suggestion
+  const exact = rows.filter(r => r.folded === q).sort((x, y) => y.count - x.count)[0];
+  const pick = exact || matches[0];
+  if (pick) choose(pick);
+  else {
+    current = null;
+    document.getElementById("readout").replaceChildren();
+    document.getElementById("interpretation").innerHTML =
+      '<span class="error">No match. The dataset only includes ingredients and accords that appear in at least 10 fragrances.</span>';
+  }
+});
+
+// ---------- interpretation ----------
+function describe(value, axis) {
+  const or = Math.exp(Math.abs(value));
+  if (or < 1.1) return null;
+  const side = value > 0 ? axis.pos : axis.neg;
+  const other = value > 0 ? axis.neg : axis.pos;
+  const isGender = axis.key === "a";
+  return `<strong>${or.toFixed(2)}×</strong> the odds of being ${isGender ? `marketed for ${side}` : `from ${/^[aeiou]/.test(side) ? "an" : "a"} ${side} brand`} rather than ${other}`;
+}
+
+function showResult(r) {
+  const what = {
+    "accord": `the <strong>${r.item}</strong> accord`,
+    "ingredient": `<strong>${r.item}</strong> as an ingredient`,
+    "ingredient + accord": `<strong>${r.item}</strong> as either an ingredient or an accord`,
+  }[r.type];
+
+  document.getElementById("readout").replaceChildren(...[...AXES, UNISEX].map(axis => {
+    const v = r[axis.key];
+    const chip = document.createElement("div");
+    chip.className = "chip";
+    chip.style.borderColor = css(axis.color);
+    const val = document.createElement("strong");
+    val.textContent = `${Math.exp(Math.abs(v)).toFixed(2)}× ${v >= 0 ? axis.pos : axis.neg}`;
+    chip.append(val, `${axis.neg} ↔ ${axis.pos}`);
+    return chip;
+  }));
+
+  const parts = AXES.map(axis => describe(r[axis.key], axis)).filter(Boolean);
+  const neutral = AXES.filter(axis => !describe(r[axis.key], axis)).map(axis => `${axis.neg} vs ${axis.pos}`);
+
+  let text = parts.length
+    ? `A fragrance with ${r.item} has ${parts.join("; ")}. `
+    : `None of the three axes shows a meaningful lean (all odds ratios are within 10% of even). `;
+  if (parts.length && neutral.length) text += `It shows essentially no lean on ${neutral.join(" or ")}. `;
+  const u = Math.exp(Math.abs(r.u));
+  text += u < 1.1
+    ? `Separately, it is about as common in unisex fragrances as in men's and women's ones. `
+    : `Separately, compared with all men's and women's fragrances combined, it has <strong>${u.toFixed(2)}×</strong> the odds of appearing in a ${r.u > 0 ? "unisex" : "gendered"} fragrance (this unisex measure is not part of the 3D arrow). `;
+  document.getElementById("interpretation").innerHTML = text;
+}
+
+// ---------- ranking tables ----------
+// Top 10 per list; `score` sorts descending. Values are log-odds, so negating flips to the other end
+const RANKINGS = [
+  { title: "Most common", color: "--muted", score: r => r.count, show: r => r.count.toLocaleString() },
+  { title: "Most unisex", color: "--unisex", score: r => r.u },
+  { title: "Most masculine", color: "--gender", score: r => -r.a },
+  { title: "Most feminine", color: "--gender", score: r => r.a },
+  { title: "Most old world", color: "--world", score: r => -r.b },
+  { title: "Most new world", color: "--world", score: r => r.b },
+  { title: "Most global north", color: "--south", score: r => -r.c },
+  { title: "Most global south", color: "--south", score: r => r.c },
+];
+
+function renderRankings() {
+  document.getElementById("rankings").replaceChildren(...RANKINGS.map(rank => {
+    // Collapsed by default; click the title to expand
+    const section = el("details", "ranking");
+    const summary = el("summary");
+    summary.style.borderColor = css(rank.color);
+    summary.append(el("h2", "", rank.title));
+    const tbody = el("tbody");
+    const top = [...rows].sort((x, y) => rank.score(y) - rank.score(x)).slice(0, 10);
+    for (const r of top) {
+      const tr = el("tr");
+      tr.tabIndex = 0;
+      tr.title = `${r.type} · ${r.count.toLocaleString()} fragrances — click to plot`;
+      tr.append(el("td", "", r.item), el("td", "num", rank.show ? rank.show(r) : `${Math.exp(rank.score(r)).toFixed(2)}×`));
+      const plot = () => { choose(r); viewer.scrollIntoView({ behavior: "smooth", block: "nearest" }); };
+      tr.addEventListener("click", plot);
+      tr.addEventListener("keydown", e => { if (e.key === "Enter") plot(); });
+      tbody.append(tr);
+    }
+    const table = el("table");
+    table.append(tbody);
+    section.append(summary, table);
+    return section;
+  }));
+}
+
+// ---------- 3D viewer ----------
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+let yaw = -0.6, pitch = 0.35;
+let drag = null;
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = canvas.clientWidth * dpr;
+  canvas.height = canvas.clientHeight * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener("resize", resize);
+resize();
+
+// World coords: x right, y up, z towards viewer. Returns screen [x, y, depth].
+function project([x, y, z]) {
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const x1 = x * cy + z * sy, z1 = -x * sy + z * cy;
+  const y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  const scale = Math.min(w, h) / (range * 2.5);
+  const persp = 9 / (9 - z2);
+  return [w / 2 + x1 * scale * persp, h / 2 - y2 * scale * persp, z2];
+}
+
+const scaled = (v, k) => v.map(c => c * k);
+
+function line(p, q, color, width = 1, dash = []) {
+  const [x1, y1] = project(p), [x2, y2] = project(q);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.setLineDash(dash);
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function label(p, text, color, font = "600 12px") {
+  const [x, y] = project(p);
+  ctx.fillStyle = color;
+  ctx.font = `${font} Arial, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x, y);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+  const muted = css("--muted");
+
+  // Floor grid on the gender × world plane, one line per tick
+  for (const t of [0, ...TICKS.flatMap(t => [Math.log(t), -Math.log(t)])]) {
+    line([t, 0, -range], [t, 0, range], css("--grid"));
+    line([-range, 0, t], [range, 0, t], css("--grid"));
+  }
+
+  for (const axis of AXES) {
+    const color = css(axis.color);
+    line(scaled(axis.vec, -range), scaled(axis.vec, range), color, 1.5);
+    for (const t of TICKS) {
+      label(scaled(axis.vec, Math.log(t)), `${t}×`, muted, "10px");
+      label(scaled(axis.vec, -Math.log(t)), `${t}×`, muted, "10px");
+    }
+    label(scaled(axis.vec, range * 1.13), axis.pos, color);
+    label(scaled(axis.vec, -range * 1.13), axis.neg, color);
+  }
+
+  tipScreen = null;
+  if (current) {
+    const tip = AXES.reduce((acc, axis) => acc.map((c, i) => c + axis.vec[i] * current[axis.key]), [0, 0, 0]);
+    const accent = css("--accent");
+    // Drop line to the floor plane for depth
+    line(tip, [tip[0], 0, tip[2]], muted, 1, [4, 4]);
+    line([0, 0, 0], [tip[0], 0, tip[2]], muted, 1, [4, 4]);
+    line([0, 0, 0], tip, accent, 3);
+    // Arrowhead
+    const [tx, ty] = project(tip), [bx, by] = project(scaled(tip, 0.85));
+    tipScreen = [tx, ty];
+    const ang = Math.atan2(ty - by, tx - bx);
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.moveTo(tx, ty);
+    ctx.lineTo(tx - 12 * Math.cos(ang - 0.4), ty - 12 * Math.sin(ang - 0.4));
+    ctx.lineTo(tx - 12 * Math.cos(ang + 0.4), ty - 12 * Math.sin(ang + 0.4));
+    ctx.fill();
+    label([tip[0], tip[1] + range * 0.1 * Math.sign(tip[1] || 1), tip[2]], current.item, css("--text"));
+  }
+  updateTooltip();
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+
+canvas.addEventListener("pointerdown", e => {
+  drag = { x: e.clientX, y: e.clientY, yaw, pitch };
+  canvas.setPointerCapture(e.pointerId);
+  canvas.classList.add("dragging");
+});
+canvas.addEventListener("pointermove", e => {
+  pointer = [e.offsetX, e.offsetY];
+  if (!drag) return;
+  yaw = drag.yaw + (e.clientX - drag.x) * 0.01;
+  pitch = Math.max(-1.5, Math.min(1.5, drag.pitch + (e.clientY - drag.y) * 0.01));
+});
+canvas.addEventListener("pointerup", e => {
+  // A tap (no real drag) acts as hover, so touch users can open the tooltip by tapping the arrowhead
+  if (drag && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 5) pointer = [e.offsetX, e.offsetY];
+  drag = null;
+  canvas.classList.remove("dragging");
+});
+canvas.addEventListener("pointercancel", () => { drag = null; canvas.classList.remove("dragging"); });
+// Touch fires pointerleave right after pointerup, which would close a tapped tooltip immediately
+canvas.addEventListener("pointerleave", e => { if (e.pointerType !== "touch") pointer = null; });
+
+// ---------- arrowhead tooltip ----------
+const viewer = document.getElementById("viewer");
+const tooltip = document.getElementById("tooltip");
+let pointer = null;   // last pointer position over the canvas, in canvas pixels
+let tipScreen = null; // arrowhead position in canvas pixels, set each frame
+let tooltipFor;       // the row the tooltip content was built for
+
+const HIT_RADIUS = 18;
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+// e.g. "women's fragrance from an old world, global south brand" / "unisex fragrance from …"
+function describeExample(ex) {
+  const g = ex.gender === "unisex" ? "unisex" : `${ex.gender}'s`;
+  return `${g} fragrance from ${/^[aeiou]/.test(ex.world) ? "an" : "a"} ${ex.world}, ${ex.south} brand`;
+}
+
+const TINY_LEAN = Math.log(1.1); // leans under 1.1× either way may match the other side (see the notebook)
+
+// The gender target is unisex when the item leans unisex (u > 0 in log-odds), so that's the lean that was tiny
+const offSideName = (axis, r) =>
+  ({ gender: r.u > 0 ? "unisex" : "men/women", world: "old/new world", south: "north/south" })[axis];
+
+function buildTooltip(r) {
+  const vec = el("div", "vec");
+  vec.append("[");
+  AXES.forEach((axis, i) => {
+    const n = el("span", "", Math.exp(r[axis.key]).toFixed(2));
+    n.style.color = css(axis.color);
+    vec.append(n, i < AXES.length - 1 ? ", " : "");
+  });
+  vec.append("]");
+  const legend = el("div", "legend", "odds ratios · a: >1 women, <1 men · b: >1 new world, <1 old world · c: >1 global south, <1 global north");
+
+  const body = [];
+  const ex = examples && examples[r.item];
+  if (examples === null) {
+    body.push(el("div", "flag", "Couldn't load example fragrances."));
+  
+  } else if (ex) {
+    const name = el("div");
+    name.append(el("span", "name", ex.name), ` (${ex.year ?? "year unknown"}) — ${ex.house}, ${ex.country}`);
+    const dl = el("dl");
+    for (const [label, value] of [["Top", ex.top], ["Heart", ex.heart], ["Base", ex.base], ["Accords", ex.accords.join(", ")]]) {
+      dl.append(el("dt", "", label), el("dd", "", value));
+    }
+    body.push(name, dl);
+    if (ex.off_side.length) {
+      // Off on gender for a clearly unisex item means no unisex fragrance matched; other off axes had tiny leans
+      const unisexFallback = ex.off_side.includes("gender") && r.u >= TINY_LEAN;
+      const tiny = ex.off_side.filter(a => !(unisexFallback && a === "gender")).map(a => offSideName(a, r));
+      let note = "Nothing matched exactly.";
+      if (unisexFallback) note += ` No unisex fragrance with ${r.item} matched, so this is a ${ex.gender}'s one.`;
+      if (tiny.length) note += ` The ${tiny.join(" and ")} lean is under 1.1×, so this example is from the other side.`;
+      body.push(el("div", "legend", note));
+    }
+  }
+  tooltip.replaceChildren(vec, legend, ...body);
+}
+
+function updateTooltip() {
+  const hit = current && tipScreen && pointer && !drag &&
+    Math.hypot(pointer[0] - tipScreen[0], pointer[1] - tipScreen[1]) < HIT_RADIUS;
+  canvas.classList.toggle("on-tip", Boolean(hit));
+  if (!hit) { tooltip.hidden = true; return; }
+
+  if (tooltipFor !== current) { buildTooltip(current); tooltipFor = current; }
+  tooltip.hidden = false;
+
+  // Beside the arrowhead on the side facing away from the origin. If there isn't room there, go
+  // above/below instead (again away from the origin) so it never covers the arrow; that may overhang the viewer
+  const w = tooltip.offsetWidth, h = tooltip.offsetHeight, W = viewer.clientWidth, H = viewer.clientHeight;
+  const [ox, oy] = project([0, 0, 0]);
+  const [tx, ty] = tipScreen;
+  const sideLeft = tx >= ox ? tx + 16 : tx - 16 - w;
+  let left, top;
+  if (sideLeft >= 8 && sideLeft + w <= W - 8) {
+    left = sideLeft;
+    top = Math.max(8, Math.min(ty - h / 2, H - h - 8));
+  } else {
+    left = Math.max(8, Math.min(tx - w / 2, W - w - 8));
+    top = ty >= oy ? ty + 32 : ty - 32 - h; // extra gap clears the item label drawn beside the tip
+  }
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+</script>
+</body>
+</html>
