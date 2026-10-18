@@ -16,7 +16,7 @@
     --accent: goldenrod;
     --gender: #c2456e;
     --world: #2a7fb0;
-    --south: #4c8a27;
+    --orient: #4c8a27;
     --unisex: #7a5bc4;
     --flag: #a86400;
     --grid: rgba(0, 0, 0, 0.07);
@@ -125,8 +125,7 @@
     z-index: 5;
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
   }
-  #tooltip .vec { font-size: 15px; font-weight: 600; }
-  #tooltip .legend { color: var(--muted); font-size: 11px; margin-bottom: 8px; }
+  #tooltip .vec { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
   #tooltip .heading { color: var(--muted); margin-bottom: 2px; }
   #tooltip .title { font-size: 17px; font-weight: 700; margin-bottom: 2px; }
   #tooltip .title::first-letter { text-transform: uppercase; }
@@ -164,17 +163,6 @@
   .chip strong { display: block; font-size: 18px; }
   .back { display: inline-block; margin-bottom: 8px; color: var(--muted); font-size: 14px; text-decoration: none; }
   .back:hover { color: var(--text); text-decoration: underline; }
-  button.info-toggle {
-    margin-top: 12px;
-    padding: 4px 10px;
-    font-size: 13px;
-    font-weight: normal;
-    color: var(--text);
-    background: var(--bg);
-    border: 1px solid var(--border);
-  }
-  button.info-toggle:hover { background: var(--hover); }
-
   /* Perfume mode: legend of the perfume's items under the graph */
   aside { min-width: 0; }
   .mode-toggle { display: flex; margin-bottom: 8px; }
@@ -233,7 +221,7 @@
 <header>
   <a class="back" href="/projects.html">← Projects</a>
   <h1>Fragrance Vectors</h1>
-  <p class="sub">Examine the lean of a note or accord by gender, old vs new world, and global north vs south.</p>
+  <p class="sub">Examine the lean of a note or accord by gender, old vs new world, and orient vs occident.</p>
 </header>
 <main>
 
@@ -276,58 +264,46 @@
 <footer>
   <p>Data: the <a href="https://www.kaggle.com/datasets/olgagmiufana1/fragrantica-com-fragrance-dataset">Fragrantica.com Fragrance Dataset</a>
   on Kaggle, scraped from <a href="https://www.fragrantica.com">Fragrantica</a> by Olga G (Miufana1). It contains 24,063 fragrances with their
-  brand, brand country, target gender, top/heart/base notes and main accords. Old/new world and global north/south are
-  based on the brand's country. Only notes and accords found in at least
+  brand, brand country, target gender, top/heart/base notes and main accords. Old/new world and orient/occident are
+  based on the brand's country; orient means the Middle East, North Africa and Asia. Only notes and accords found in at least
   10 fragrances are included.</p>
 
-  <!-- <h2>How the numbers are calculated</h2>
+  <h2>How the numbers are calculated (Smoothed Log Odds)</h2>
   <p>
-    Each axis compares two groups of fragrances, \(A\) and \(B\): women vs men for gender (unisex fragrances
-    left out), new vs old world, global south vs north, and, for the separate unisex measure, unisex vs men and
-    women combined. For an ingredient or accord \(i\), let \(n_A, n_B\) be the number of fragrances in each group
-    and \(k_A, k_B\) the number of those that contain \(i\) (anywhere in the top, heart or base notes, or as an
-    accord). Let \(p = K / N\) be the share of all fragrances that contain \(i\), where \(N\) is every fragrance in the
-    dataset and \(K\) the number containing \(i\). This includes ones outside both groups, such as unisex fragrances
-    on the gender axis.
+    Each axis compares two groups, \(A\) and \(B\): women vs men (unisex left out), new vs old world, and orient vs
+    occident; the unisex score compares unisex with men + women. For a note or accord \(i\), \(n_A\) is the size of
+    group \(A\) and \(k_A\) how many of those contain \(i\) (as a top, heart or base note or a main accord); likewise
+    for \(B\).
   </p>
   <p>
-    Raw odds ratios swing wildly for rare items, so each group gets a prior worth \(\alpha = 5\) imaginary
-    fragrances containing \(i\), padded with enough imaginary fragrances without \(i\) to keep the overall rate \(p\):
+    Rare items would give noisy (or infinite) results, so each group gets
+    \(\alpha_{\text{yes}} = 5\) imaginary fragrances with \(i\) and \(\alpha_{\text{no}} = 5\,(1 - p)/p\) without,
+    where \(p\) is the share of all 24,063 fragrances containing \(i\). These match the overall odds, so they lean
+    neither way: they barely move common items and pull rare ones toward no lean.
   </p>
-  \[
-    \alpha_{\text{yes}} = \alpha, \qquad \alpha_{\text{no}} = \alpha \, \frac{1 - p}{p}
-  \]
   <p>
-    Here \(\alpha_{\text{yes}}\) is the number of imaginary fragrances <em>with</em> \(i\) added to each group, and
-    \(\alpha_{\text{no}}\) the number <em>without</em> it. Their ratio \(\alpha_{\text{yes}} / \alpha_{\text{no}} =
-    p / (1 - p)\) is the overall odds of a fragrance containing \(i\), so the prior on its own shows no lean either way.
-    The smoothed log-odds ratio is then
+    Each group's odds of containing \(i\) (fragrances with it per fragrance
+    without), compared on a log scale so leans are symmetric (2× either way is \(\pm\ln 2\)):
   </p>
   \[
     \delta_i = \ln \frac{k_A + \alpha_{\text{yes}}}{\,n_A - k_A + \alpha_{\text{no}}\,}
              \;-\; \ln \frac{k_B + \alpha_{\text{yes}}}{\,n_B - k_B + \alpha_{\text{no}}\,}
   \]
   <p>
-    and the number shown on the page is the odds ratio \(\mathrm{OR}_i = e^{\delta_i}\): \(1\times\) means no
-    difference, and \(\mathrm{OR}_i > 1\) leans toward group \(A\). Common items barely move under the prior; an item
-    seen in only a handful of fragrances is pulled strongly toward \(\delta_i = 0\).
+    \(\delta_i\) is a log-odds ratio, a unitless number where 0 means no difference and positive leans toward \(A\).
+    The page shows odds ratios as plain multipliers toward the side an item leans: 2.57× women means 2.57 times the
+    odds in women's fragrances, and 1× means no difference. The tooltip's vector shows \(e^{\delta_i}\) itself, so
+    values below 1 lean toward \(B\). The arrow is
+    \(\vec{v}_i = \big(\delta_i^{\text{gender}},\; \delta_i^{\text{world}},\; \delta_i^{\text{orient}}\big)\).
   </p>
-  <p>
-    The arrow plots the three log-odds directly, so equal leans in opposite directions sit at equal distances
-    from the origin:
-  </p>
-  \[
-    \vec{v}_i = \big(\delta_i^{\text{gender}},\; \delta_i^{\text{world}},\; \delta_i^{\text{south}}\big)
-  \]
-  <p>
-    Leans with \(e^{|\delta_i|} < 1.1\) are described as no meaningful lean. These are associations, not causes: a few
-    prolific brands can drive a result, and the axes overlap (Brazil is both new world and global south).
-  </p>
-</footer> -->
+
+
+
+</footer>
 
 <script>
 const CSV_URL = "../fragrances/ingredient_vectors.csv";
-// Per item: the most-rated fragrance containing it in the same octant as its vector, or null if there is none
+// Per item: an example fragrance containing it, chosen by the notebook (see the footer), or null if there is none
 const EXAMPLES_URL = "../fragrances/ingredient_examples.json";
 // Every perfume with the items it contains; ~2.6 MB, so only fetched once someone uses the perfume search
 const PERFUMES_URL = "../fragrances/perfumes.json";
@@ -343,7 +319,7 @@ const TICKS = [1.5, 2, 3]; // odds-ratio tick marks, placed at log(t) on each si
 const AXES = [
   { key: "a", vec: [1, 0, 0], color: "--gender", pos: "women", neg: "men" },
   { key: "b", vec: [0, 0, 1], color: "--world", pos: "new world", neg: "old world" },
-  { key: "c", vec: [0, -1, 0], color: "--south", pos: "global south", neg: "global north" },
+  { key: "c", vec: [0, -1, 0], color: "--orient", pos: "orient", neg: "occident" },
 ];
 
 // Not plotted: how much more often the item appears in unisex fragrances than in men's + women's
@@ -358,6 +334,7 @@ let rowsByName = new Map();
 let current = null;  // the single plotted item (ingredient search / ranking tables)
 let perfume = null;  // perfume mode: { name, house, …, items: [{ row, color }] }
 let focused = null;  // in perfume mode, the item singled out (others greyed), or null
+let plotCount = 0;   // bumped by every new plot, so a slow perfume load can't replace a later choice
 let examples = {}; // stays {} until loaded; null if loading failed
 
 fetch(EXAMPLES_URL)
@@ -468,6 +445,7 @@ function pick(m) {
 
 // Plot a single note or accord (also used by the ranking tables, so it switches the box to that mode)
 function choose(r) {
+  plotCount++;
   setMode("item");
   input.value = r.item;
   matches = [];
@@ -512,21 +490,14 @@ document.getElementById("form").addEventListener("submit", async e => {
   if (found) choose(found);
   else {
     current = null;
+    clearPerfume();
     document.getElementById("readout").replaceChildren();
-
-    infoToggle.hidden = true;
     message.innerHTML =
       '<span class="error">No match. The dataset only includes ingredients and accords that appear in at least 10 fragrances.</span>';
   }
 });
 
 function showResult(r) {
-  const what = {
-    "accord": `the <strong>${r.item}</strong> accord`,
-    "ingredient": `<strong>${r.item}</strong> as an ingredient`,
-    "ingredient + accord": `<strong>${r.item}</strong> as either an ingredient or an accord`,
-  }[r.type];
-
   document.getElementById("readout").replaceChildren(...[...AXES, UNISEX].map(axis => {
     const v = r[axis.key];
     const chip = document.createElement("div");
@@ -537,12 +508,7 @@ function showResult(r) {
     chip.append(val, `${axis.neg} ↔ ${axis.pos}`);
     return chip;
   }));
-
-  const parts = AXES.map(axis => describe(r[axis.key], axis)).filter(Boolean);
-  const neutral = AXES.filter(axis => !describe(r[axis.key], axis)).map(axis => `${axis.neg} vs ${axis.pos}`);
-
   document.getElementById("message").innerHTML = "";
-  infoToggle.hidden = false;
 }
 
 // ---------- ranking tables ----------
@@ -554,8 +520,8 @@ const RANKINGS = [
   { title: "Most feminine", color: "--gender", score: r => r.a },
   { title: "Most old world", color: "--world", score: r => -r.b },
   { title: "Most new world", color: "--world", score: r => r.b },
-  { title: "Most global north", color: "--south", score: r => -r.c },
-  { title: "Most global south", color: "--south", score: r => r.c },
+  { title: "Most occident", color: "--orient", score: r => -r.c },
+  { title: "Most orient", color: "--orient", score: r => r.c },
 ];
 
 function renderRankings() {
@@ -634,6 +600,7 @@ function perfumeMatches(q) {
 const itemColor = i => `hsl(${(i * 137.508) % 360}, 70%, ${i % 2 ? 36 : 48}%)`;
 
 function choosePerfume(p) {
+  plotCount++;
   input.value = p.name;
   matches = [];
   active = -1;
@@ -677,16 +644,14 @@ function focusItem(row) {
     button.classList.toggle("dim", row !== null && !isFocused);
   }
   if (row) showResult(row);
-  else {
-    document.getElementById("readout").replaceChildren();
-    infoToggle.hidden = true;
-  }
+  else document.getElementById("readout").replaceChildren();
 }
 
 function clearPerfume() {
   if (!perfume) return;
   perfume = null;
   focused = null;
+  document.getElementById("legend").replaceChildren();
   document.getElementById("perfume-panel").hidden = true;
   document.getElementById("hint").textContent = "drag to rotate · hover or tap the arrowhead for an example";
 }
@@ -862,26 +827,18 @@ function el(tag, className, text) {
   return node;
 }
 
-// e.g. "women's fragrance from an old world, global south brand" / "unisex fragrance from …"
-function describeExample(ex) {
-  const g = ex.gender === "unisex" ? "unisex" : `${ex.gender}'s`;
-  return `${g} fragrance from ${/^[aeiou]/.test(ex.world) ? "an" : "a"} ${ex.world}, ${ex.south} brand`;
-}
-
-const TINY_LEAN = Math.log(1.1); // leans under 1.1× either way may match the other side (see the notebook)
-
-// The gender target is unisex when the item leans unisex (u > 0 in log-odds), so that's the lean that was tiny
-const offSideName = (axis, r) =>
-  ({ gender: r.u > 0 ? "unisex" : "men/women", world: "old/new world", south: "north/south" })[axis];
-
 // Plot the tooltip's example perfume, as if it had been searched for
 async function showExamplePerfume(ex) {
   tooltip.hidden = true;
   overTooltip = false;
   setMode("perfume");
+  const plotted = plotCount;
   await loadPerfumes();
-  if (!perfumes) return;
-  const found = perfumes.find(p => p.name === ex.name && p.house === ex.house);
+  // Give up if loading failed or the user plotted something else or left perfume mode in the meantime
+  if (!perfumes || plotCount !== plotted || searchMode !== "perfume") return;
+  // Name + house isn't unique (e.g. a men's and a women's version), so match year, gender and ratings too
+  const found = perfumes.find(p => p.name === ex.name && p.house === ex.house && p.year === ex.year
+    && p.gender === ex.gender && p.ratings === ex.ratings);
   if (found) choosePerfume(found);
   else message.innerHTML = '<span class="error">No perfume found.</span>';
 }
@@ -896,7 +853,6 @@ function buildTooltip(r) {
     vec.append(n, i < AXES.length - 1 ? ", " : "");
   });
   vec.append("]");
-  const legend = el("div", "legend", "odds ratios · a: >1 women, <1 men · b: >1 new world, <1 old world · c: >1 global south, <1 global north");
 
   const body = [];
   const ex = examples && examples[r.item];
@@ -924,17 +880,8 @@ function buildTooltip(r) {
       dl.append(el("dt", "", label), dd);
     }
     body.push(name, dl);
-    if (ex.off_side.length) {
-      // Off on gender for a clearly unisex item means no unisex fragrance matched; other off axes had tiny leans
-      const unisexFallback = ex.off_side.includes("gender") && r.u >= TINY_LEAN;
-      const tiny = ex.off_side.filter(a => !(unisexFallback && a === "gender")).map(a => offSideName(a, r));
-      let note = "Nothing matched exactly.";
-      if (unisexFallback) note += ` No unisex fragrance with ${r.item} matched, so this is a ${ex.gender}'s one.`;
-      if (tiny.length) note += ` The ${tiny.join(" and ")} lean is under 1.1×, so this example is from the other side.`;
-      body.push(el("div", "legend", note));
-    }
   }
-  tooltip.replaceChildren(title, vec, legend, ...body);
+  tooltip.replaceChildren(title, vec, ...body);
 }
 
 // The deadzone: a wedge widening from the arrowhead's hit area (2 × HIT_RADIUS across) to part of the tooltip's near edge
