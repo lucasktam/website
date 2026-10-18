@@ -208,6 +208,9 @@
   }
   footer a { color: inherit; }
   footer h2 { margin: 20px 0 4px; font-size: 14px; color: var(--text); }
+  footer > :first-child { margin-top: 0; }
+  footer summary { cursor: pointer; color: var(--text); }
+  footer summary h2 { display: inline; margin: 0; }
   footer p { margin: 8px 0; }
   footer .katex-display { margin: 10px 0; color: var(--text); overflow-x: auto; overflow-y: hidden; }
 </style>
@@ -262,13 +265,14 @@
 </div>
 
 <footer>
-  <p>Data: the <a href="https://www.kaggle.com/datasets/olgagmiufana1/fragrantica-com-fragrance-dataset">Fragrantica.com Fragrance Dataset</a>
+  <h2>Data</h2>
+  <p>The <a href="https://www.kaggle.com/datasets/olgagmiufana1/fragrantica-com-fragrance-dataset">Fragrantica.com Fragrance Dataset</a>
   on Kaggle, scraped from <a href="https://www.fragrantica.com">Fragrantica</a> by Olga G (Miufana1). It contains 24,063 fragrances with their
   brand, brand country, target gender, top/heart/base notes and main accords. Old/new world and orient/occident are
   based on the brand's country; orient means the Middle East, North Africa and Asia. Only notes and accords found in at least
   10 fragrances are included.</p>
-
-  <h2>How the numbers are calculated (Smoothed Log Odds)</h2>
+  <details>
+  <summary><h2>How the numbers are calculated (Smoothed Log Odds)</h2></summary>
   <p>
     Each axis compares two groups, \(A\) and \(B\): women vs men (unisex left out), new vs old world, and orient vs
     occident; the unisex score compares unisex with men + women. For a note or accord \(i\), \(n_A\) is the size of
@@ -297,13 +301,13 @@
     \(\vec{v}_i = \big(\delta_i^{\text{gender}},\; \delta_i^{\text{world}},\; \delta_i^{\text{orient}}\big)\).
   </p>
 
-
-
+  </details>
+  
 </footer>
 
 <script>
 const CSV_URL = "../fragrances/ingredient_vectors.csv";
-// Per item: an example fragrance containing it, chosen by the notebook (see the footer), or null if there is none
+// Per item: an example fragrance containing it, chosen by the notebook, or null if there is none
 const EXAMPLES_URL = "../fragrances/ingredient_examples.json";
 // Every perfume with the items it contains; ~2.6 MB, so only fetched once someone uses the perfume search
 const PERFUMES_URL = "../fragrances/perfumes.json";
